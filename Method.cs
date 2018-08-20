@@ -118,5 +118,13 @@ namespace URWPGSim2D.Strategy
             return xzdangle;
         }
         #endregion
+
+        #region 获得两点距离
+        public static float GetDistance(xna.Vector3 a, xna.Vector3 b)
+        {
+            return (float)Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Z - b.Z, 2));
+        }
+        
+        #endregion
     }
 }
