@@ -11,21 +11,7 @@ namespace URWPGSim2D.Strategy
 {
     class Method
     {
-        #region 返回鱼到定点的实时T速度档位决策值
-        /// <summary>
-        /// 实时返回角速度档位
-        /// </summary>
-        /// <param name="angvel">由Getxzdangle（）函数返回的角度值</param>
-        /// <returns>返回角速度档位</returns>
-        public static int TransfromAngletoTCode(float angvel)
-        {
-            if (angvel < 0)
-                return 0;
-            else if (angvel == 0)
-                return 7;
-            else
-                return 14;
-        }
+        #region 鱼所需转动的角度
         /// <summary>
         /// 返回鱼到达定点需要转的角度
         /// </summary>
@@ -123,12 +109,12 @@ namespace URWPGSim2D.Strategy
         /// </summary>
         /// <param name="fish"></param>
         /// <param name="aimPosition"></param>
-        /// <returns>-1表示左转 0表示直行 1表示右转</returns>
-        public static int Getxzdangle(RoboFish fish, xna.Vector3 aimPosition)
+        /// <returns>返回所需转过的角度 </returns>
+        public static float Getxzdangle(RoboFish fish, xna.Vector3 aimPosition)
         {
             xna.Vector3 aimVector;
-            aimVector.X = aimPosition.X - fish.PositionMm.X;
-            aimVector.Z = aimPosition.Z - fish.PositionMm.Z;
+            aimVector.X = aimPosition.X - fish.PolygonVertices[0].X;
+            aimVector.Z = aimPosition.Z - fish.PolygonVertices[0].Z;
             aimVector.Y = 0;
             //float aimAngle = StrategyHelper.Helpers.GetAngleDegree(aimVector);
             xna.Vector3 fishRad = new xna.Vector3((float)Math.Cos(fish.BodyDirectionRad), 0, (float)Math.Sin(fish.BodyDirectionRad));
@@ -142,9 +128,92 @@ namespace URWPGSim2D.Strategy
                 theta -= (float)(2 * Math.PI);
             else if (theta < -Math.PI)
                 theta += (float)(2 * Math.PI);
-            if (theta > 0) return 1;
-            else if (theta < 0) return -1;
-            else return 0;
+            return theta;
+        }
+        #endregion
+
+        #region 鱼到定点的推荐T速度档位决策值
+        /// <summary>
+        /// 实时返回角速度档位
+        /// </summary>
+        /// <param name="angvel">由Getxzdangle（）函数返回的角度值</param>
+        /// <returns>返回角速度档位</returns>
+        public static int GetxzdTcode(float angvel)
+        {
+            //float interval = 1f / 7;//每个划分区间的宽度
+            //if (angvel == 0)
+            //    return 7;
+
+            //else if (angvel < interval * Math.PI && angvel > 0)
+            //    return 8;
+            //else if (angvel < 2 * interval * Math.PI && angvel >= interval * Math.PI)
+            //    return 9;
+            //else if (angvel < 3 * interval * Math.PI && angvel >= 2 * interval * Math.PI)
+            //    return 10;
+            //else if (angvel < 4 * interval * Math.PI && angvel >= 3 * interval * Math.PI)
+            //    return 11;
+            //else if (angvel < 5 * interval * Math.PI && angvel >= 4 * interval * Math.PI)
+            //    return 12;
+            //else if (angvel < 6 * interval * Math.PI && angvel >= 5 * interval * Math.PI)
+            //    return 13;
+            //else if (angvel <= Math.PI && angvel >= 5 * interval * Math.PI)
+            //    return 14;
+
+
+            //else if (-angvel < interval * Math.PI && -angvel > 0)
+            //    return 6;
+            //else if (-angvel < 2 * interval * Math.PI && -angvel >= interval * Math.PI)
+            //    return 5;
+            //else if (-angvel < 3 * interval * Math.PI && -angvel >= 2 * interval * Math.PI)
+            //    return 4;
+            //else if (-angvel < 4 * interval * Math.PI && -angvel >= 3 * interval * Math.PI)
+            //    return 3;
+            //else if (-angvel < 5 * interval * Math.PI && -angvel >= 4 * interval * Math.PI)
+            //    return 2;
+            //else if (-angvel < 6 * interval * Math.PI && -angvel >= 5 * interval * Math.PI)
+            //    return 1;
+            //else if (-angvel <= Math.PI && -angvel >= 5 * interval * Math.PI)
+            //    return 0;
+
+            //else return 7;
+
+
+            if (angvel < 0) return 0;
+            else if (angvel > 0) return 14;
+            else return 7;
+
+        }
+        #endregion
+
+        #region 鱼小空间内转弯速度推荐决策值（权衡速度与空间限制）
+        public static int GetxzdVcode(float angvel)
+        {
+            float interval = 0.2f;//每个划分区间的宽度
+            if (angvel <= interval * Math.PI && angvel >= -interval * Math.PI)
+                return 14;
+            else if (angvel <= 2 * interval * Math.PI && angvel >= -2 * interval * Math.PI)
+                return 11;
+            else if (angvel <= 3 * interval * Math.PI && angvel >= -3 * interval * Math.PI)
+                return 8;
+            else if (angvel <= 4 * interval * Math.PI && angvel >= -4 * interval * Math.PI)
+                return 5;
+            else return 2;
+
+        }
+        #endregion
+
+        #region 根据距离推荐速度决策值
+        /// <summary>
+        /// 根据距离推荐速度决策值,推荐距离为300内时调用
+        /// </summary>
+        /// <param name="distance">相距距离</param>
+        /// <returns>Vcode档位</returns>
+        public static int GetVcodeByDitence(float distance)
+        {
+            if (distance < 300 && distance >= 150)
+                return 8;
+            else
+                return 6;
         }
         #endregion
 
@@ -154,6 +223,24 @@ namespace URWPGSim2D.Strategy
             return (float)Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Z - b.Z, 2));
         }
 
+        #endregion
+
+        #region 通过球与目标点，获得顶球点坐标
+        /// <summary>
+        /// 通过球与目标点，获得顶球点坐标
+        /// </summary>
+        /// <param name="ball">球对象</param>
+        /// <param name="dest">目标位置</param>
+        /// <returns>顶球点坐标</returns>
+        public static xna.Vector3 getPoint(xna.Vector3 ball, xna.Vector3 dest)
+        {
+            xna.Vector3 aimvector = new xna.Vector3(dest.X - ball.X, 0, dest.Z - ball.Z);
+            float aimrad = StrategyHelper.Helpers.GetAngleDegree(aimvector);
+            xna.Vector3 point = new xna.Vector3();
+            point.Z = ball.Z - 58 * (float)Math.Sin(aimrad);
+            point.X = ball.X - 58 * (float)Math.Cos(aimrad);
+            return point;
+        }
         #endregion
     }
 }
