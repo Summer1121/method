@@ -177,6 +177,106 @@ namespace URWPGSim2D.Strategy
 
         #endregion
 
+        //#region dribble算法封装
+        ///// <summary>
+        ///// dribble算法封装
+        ///// </summary>
+        ///// <param name="decision">每周期机器鱼执行策略，包含速度档位，转弯档位。</param>
+        ///// <param name="fish">目标仿真机器鱼参数，包含当前位置、速度信息。</param>
+        ///// <param name="destPtMm">目标点。</param>
+        ///// <param name="destDirRad">目标方向。</param>
+        ///// <param name="angleTheta1">鱼体方向与目标方向角度差的阈值一。
+        /////   角度差在此阈值范围内，则赋给机器鱼一个合理的速度档位（见参数disThreshold说明）。</param>
+        ///// <param name="angleTheta2">鱼体方向与目标方向角度差的阈值二。角度差小于此阈值，则机器鱼直线游动；
+        ///// 角度差大于此阈值，则机器鱼调整游动方向。</param>
+        ///// <param name="disThreshold">距离阈值。距离大于此阈值，机器鱼以速度档位VCode1游动；
+        ///// 距离小于此阈值，机器鱼以速度档位VCode2游动。</param>
+        ///// /// <param name="VCode1">直游档位1（默认6档）。</param>
+        ///// /// <param name="VCode2">直游档位2（默认4档）。</param>
+        ///// <param name="cycles">速度和转弯档位之间切换所需周期数经验值。建议取值范围在5-20之间。此参数作用是防止机器鱼“转过”,建议取5。</param>
+        ///// <param name="msPerCycle">每个仿真周期的毫秒数，传递固定参数，不能修改。</param>
+        ///// <param name="flag">机器鱼坐标选择标准，true为PositionMm，即鱼体绘图中心；false为PolygonVertices[0]，即鱼头点。</param>
+        ///// <param name="dest">目标终点</param>
+        ///// <returns></returns>
+        //public static bool dribble(ref Decision decision, RoboFish fish, xna.Vector3 ball, float destDirRad,
+        //    float angleTheta1, float angleTheta2, float disThreshold, int VCode1, int VCode2, int cycles, int msPerCycle, bool flag, 
+        //    xna.Vector3 dest_point)
+        //{
+        //    xna.Vector3 aim_vector = new xna.Vector3(dest_point.X - ball.X, 0, dest_point.Z - ball.Z);
+        //    float aim_rad = GetRadByVector(aim_vector);
+        //    if (GetDistance(fish.PolygonVertices[0], ball) <= 60)//判断是否在顶球范围内
+        //    {
+        //        StrategyHelper.Helpers.Dribble(ref decision, fish, ball, aim_rad, angleTheta1, angleTheta2, disThreshold, VCode1, VCode2, cycles, msPerCycle, true);
+        //    }
+        //    else
+        //    {
+        //        if (flag0 == 3)
+        //        {
+        //            xna.Vector3 dest_point = new xna.Vector3(-600, 0, 200);//顶球终点
+        //            xna.Vector3 aim_position = Method.getPoint(balls[0], dest_point, 58);//预顶球点
+        //            xna.Vector3 aim_vector = new xna.Vector3(dest_point.X - balls[0].X, 0, dest_point.Z - balls[0].Z);
+        //            float aim_rad = Method.GetRadByVector(aim_vector);//在顶球点的目标位姿
+        //                                                              //StrategyHelper.Helpers.PoseToPose(ref decisions[0], fishs[0], aim_position, aim_rad, 30f, 0f, mission.CommonPara.MsPerCycle, ref times[0], true);
+        //            Method.approachToPoint(ref decisions[0], fishs[0], aim_position, 14, 8, 6);
+        //            if (Method.ifOnVector(fishs[0].PolygonVertices[0], balls[0], dest_point))
+        //            {
+        //                times[0] = 0;
+        //                flag0 = 4;
+        //            }
+        //        }
+        //        if (flag0 == 4)
+        //        {
+        //            xna.Vector3 dest_point = new xna.Vector3(-600, 0, 200);//顶球终点
+        //            xna.Vector3 aim_position = Method.getPoint(balls[0], dest_point, 58);//顶球点
+        //                                                                                 ////Method.approachToPoint(ref decisions[0], fishs[0], aim_position, 6, 5, 4);
+        //            xna.Vector3 aim_vector = new xna.Vector3(dest_point.X - balls[0].X, 0, dest_point.Z - balls[0].Z);
+        //            float aim_rad = Method.GetRadByVector(aim_vector);//在顶球点的目标位姿
+        //                                                              //Method.turn(ref decisions[0], fishs[0], aim_rad);
+        //            StrategyHelper.Helpers.PoseToPose(ref decisions[0], fishs[0], aim_position, aim_rad, 5f, 0f, mission.CommonPara.MsPerCycle, ref times[0]);
+
+
+        //            if (Math.Abs(fishs[0].BodyDirectionRad - aim_rad) < 0.05 * Math.PI)
+        //            {
+        //                times[0] = 0;
+        //                flag0 = 5;
+        //            }
+        //        }
+        //}
+        //#endregion
+
+        #region 顶球终点为一条线的算法 获得线段上某点作为当前顶球终点
+        /// <summary>
+        /// 获得线段上某点作为当前顶球终点
+        /// </summary>
+        /// <param name="fish">机器鱼只读属性对象</param>
+        /// <param name="ball">球的坐标</param>
+        /// <param name="point1">线段一端点坐标</param>
+        /// <param name="point2">线段另一端点坐标</param>
+        /// <returns>返回当前鱼、球延长线与线段上交点  如不在线段上，则返回线段中点</returns>
+        public static xna.Vector3 getDest(RoboFish fish, xna.Vector3 ball, xna.Vector3 point1, xna.Vector3 point2)
+        {
+            float k1 = (ball.Z - fish.PositionMm.X) / (ball.X - fish.PositionMm.X);
+            float b1 = ball.Z - k1 * ball.X;
+
+            float k2 = (point1.Z - point2.Z) / (point1.X - point2.X);
+            float b2 = point1.Z - k2 * point1.X;
+
+            xna.Vector3 res = new xna.Vector3();
+            res.X = (b2 - b1) / (k1 - k2);
+            res.Z = (k1 * b2 - k2 * b1) / (k1 - k2);
+            res.Y = 0;
+            if ((res.X > point1.X && res.X < point2.X) || (res.X < point1.X && res.X > point2.X) || (res.Z > point1.Z && res.Z < point2.Z) || (res.Z < point1.Z && res.Z > point2.Z))
+                return res;
+            else
+            {
+                res.X = (point1.X + point2.X) / 2;
+                res.Z = (point1.Z + point2.Z) / 2;
+                return res;
+            }
+        }
+
+        #endregion
+
         #region 在当前点做小范围内转弯
         public static void turn(ref Decision decision, RoboFish fish, float aim_direction)
         {
@@ -357,9 +457,37 @@ namespace URWPGSim2D.Strategy
                 if (end.X < curr.X && start.X > curr.X) return false;
             }
 
-            if (curr.X + 100 >= xtemp && curr.X - 100 <= xtemp)
+            if (curr.X + 50 >= xtemp && curr.X - 50 <= xtemp)
                 return true;
             else return false;
+        }
+        #endregion
+
+        #region 顶球点和鱼的位置冲突，无法直线到达，防止无限顶球
+        /// <summary>
+        /// 顶球点和鱼的位置冲突，无法直线到达，防止无限顶球
+        /// </summary>
+        /// <param name="decision">决策变量</param>
+        /// <param name="fish">鱼的只读属性</param>
+        /// <param name="ball">球的坐标</param>
+        /// <param name="point">顶球点</param>
+        /// <returns>是否进行了调整</returns>
+        public static bool go_aside(ref Decision decision, RoboFish fish, xna.Vector3 ball, xna.Vector3 point)
+        {
+            xna.Vector3 vector_point = new xna.Vector3(point.X - ball.X, 0, point.Z - ball.Z);//从球到顶球点的向量
+            float rad_point = GetRadByVector(vector_point);
+            float angle = rad_point - fish.BodyDirectionRad;
+            if (angle > Math.PI) angle -= 2 * (float)Math.PI;
+            else if (angle < -Math.PI) angle += 2 * (float)Math.PI;
+            float distance = GetDistance(point, fish.PolygonVertices[0]);
+            if (Math.Abs(angle) < 30 && distance > 80 && distance < 150)//58*3^(1/2) ~ 58*2
+            {
+                decision.TCode = 14;
+                decision.VCode = 14;
+                return true;
+            }
+            return false;
+
         }
         #endregion
 
