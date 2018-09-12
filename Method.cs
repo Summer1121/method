@@ -6,6 +6,7 @@ using System.Text;
 using xna = Microsoft.Xna.Framework;
 using URWPGSim2D.Common;
 using URWPGSim2D.StrategyLoader;
+using URWPGSim2D.Core;
 
 namespace URWPGSim2D.Strategy
 {
@@ -474,20 +475,28 @@ namespace URWPGSim2D.Strategy
         /// <returns>是否进行了调整</returns>
         public static bool go_aside(ref Decision decision, RoboFish fish, xna.Vector3 ball, xna.Vector3 point)
         {
-            xna.Vector3 vector_point = new xna.Vector3(point.X - ball.X, 0, point.Z - ball.Z);//从球到顶球点的向量
-            float rad_point = GetRadByVector(vector_point);
-            float angle = rad_point - fish.BodyDirectionRad;
-            if (angle > Math.PI) angle -= 2 * (float)Math.PI;
-            else if (angle < -Math.PI) angle += 2 * (float)Math.PI;
-            float distance = GetDistance(point, fish.PolygonVertices[0]);
-            if (Math.Abs(angle) < 30 && distance > 80 && distance < 150)//58*3^(1/2) ~ 58*2
+            //获取顶球点的对称点
+            xna.Vector3 point2 = new xna.Vector3(ball.X + (ball.X - point.X), 0, ball.Z + (ball.Z - point.Z));
+            if (GetDistance(fish.PolygonVertices[0], point2) < 70 && GetDistance(fish.PolygonVertices[0], ball) < 80)
             {
-                decision.TCode = 14;
+                xna.Vector3 vector_point = new xna.Vector3(point.X - ball.X, 0, point.Z - ball.Z);//从球到顶球点的向量
+                xna.Vector3 vector_fish = new xna.Vector3(fish.PolygonVertices[0].X - ball.X, 0, fish.PolygonVertices[0].Z - ball.Z);
+                float rad_point = GetRadByVector(vector_point);
+                float rad_fish = GetRadByVector(vector_fish);
+                float angle = rad_point - rad_fish;
+                if (angle > Math.PI) angle -= (float)(2 * Math.PI);
+                else if (angle < -Math.PI) angle += (float)(2 * Math.PI);
+
+                if (angle > 0)
+                    decision.TCode = 0;
+                else decision.TCode = 14;
                 decision.VCode = 14;
-                return true;
+
+                //判断鱼头位置而调整方向
+
+                return true;//表示需要调整
             }
             return false;
-
         }
         #endregion
 
@@ -566,6 +575,8 @@ namespace URWPGSim2D.Strategy
             }
         }
         #endregion
+
+
 
     }
 }
